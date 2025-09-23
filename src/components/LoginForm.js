@@ -29,7 +29,7 @@ export default function LoginForm() {
         : formData
 
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}${endpoint}`,
+        `${process.env.NEXT_PUBLIC_SERVER_URL}${endpoint}`,
         payload
       )
 

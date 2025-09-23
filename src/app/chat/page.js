@@ -1,4 +1,4 @@
-// src/app/chat/page.js - Complete file with ESLint fixes
+// src/app/chat/page.js - Complete file with fixes
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
@@ -341,7 +341,7 @@ const MessageInput = ({ onSendMessage, onTyping }) => {
   )
 }
 
-// Main Chat Component - REST REMAINS SAME
+// Main Chat Component - FIXED SOCKET INITIALIZATION
 export default function ChatPage() {
   const [socket, setSocket] = useState(null)
   const [currentUser, setCurrentUser] = useState(null)
@@ -353,7 +353,7 @@ export default function ChatPage() {
   const [shouldRedirect, setShouldRedirect] = useState(false)
   const router = useRouter()
 
-  // Initialize user and socket
+  // Initialize user and socket - CORRECTED
   useEffect(() => {
     const initializeChat = async () => {
       const token = Cookies.get('token')
@@ -368,8 +368,11 @@ export default function ChatPage() {
         const user = JSON.parse(userData)
         setCurrentUser(user)
 
+        // FIXED: Proper socket initialization inside useEffect
         const socketInstance = io(process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000', {
-          auth: { token: token }
+          auth: { token: token },
+          transports: ['websocket', 'polling'],
+          autoConnect: true
         })
 
         setSocket(socketInstance)
@@ -396,19 +399,42 @@ export default function ChatPage() {
   useEffect(() => {
     if (!socket) return
 
-    const handleConnect = () => setIsConnected(true)
-    const handleDisconnect = () => setIsConnected(false)
+    const handleConnect = () => {
+      console.log('✅ Connected to server')
+      setIsConnected(true)
+    }
+
+    const handleDisconnect = () => {
+      console.log('🔌 Disconnected from server')
+      setIsConnected(false)
+    }
+
     const handleConnectionError = (error) => {
+      console.error('❌ Connection error:', error)
       if (error.message === 'Authentication error') {
         Cookies.remove('token')
         Cookies.remove('user')
         setShouldRedirect(true)
       }
     }
-    const handleRecentMessages = (messages) => setMessages(messages)
-    const handleNewMessage = (message) => setMessages(prev => [...prev, message])
-    const handleOnlineUsers = (users) => setOnlineUsers(users)
+
+    const handleRecentMessages = (messages) => {
+      console.log('📩 Received recent messages:', messages)
+      setMessages(messages)
+    }
+
+    const handleNewMessage = (message) => {
+      console.log('📨 New message:', message)
+      setMessages(prev => [...prev, message])
+    }
+
+    const handleOnlineUsers = (users) => {
+      console.log('👥 Online users updated:', users)
+      setOnlineUsers(users)
+    }
+
     const handleUserTyping = (data) => {
+      console.log('⌨️ User typing:', data)
       setTypingUsers(prev => {
         if (!prev.includes(data.username)) {
           return [...prev, data.username]
@@ -416,10 +442,13 @@ export default function ChatPage() {
         return prev
       })
     }
+
     const handleUserStoppedTyping = (data) => {
+      console.log('⏹️ User stopped typing:', data)
       setTypingUsers(prev => prev.filter(user => user !== data.username))
     }
 
+    // Register event listeners
     socket.on('connect', handleConnect)
     socket.on('disconnect', handleDisconnect)
     socket.on('connect_error', handleConnectionError)
@@ -429,6 +458,7 @@ export default function ChatPage() {
     socket.on('typing', handleUserTyping)
     socket.on('stopTyping', handleUserStoppedTyping)
 
+    // Cleanup function
     return () => {
       socket.off('connect', handleConnect)
       socket.off('disconnect', handleDisconnect)
@@ -441,9 +471,11 @@ export default function ChatPage() {
     }
   }, [socket])
 
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (socket) {
+        console.log('🧹 Cleaning up socket connection')
         socket.disconnect()
       }
     }
@@ -451,12 +483,14 @@ export default function ChatPage() {
 
   const handleSendMessage = useCallback((content) => {
     if (socket && content.trim()) {
+      console.log('📤 Sending message:', content)
       socket.emit('sendMessage', { content: content.trim() })
     }
   }, [socket])
 
   const handleTyping = useCallback((isTyping) => {
     if (socket) {
+      console.log('⌨️ Typing status:', isTyping)
       if (isTyping) {
         socket.emit('typing')
       } else {
@@ -466,6 +500,7 @@ export default function ChatPage() {
   }, [socket])
 
   const handleLogout = () => {
+    console.log('🚪 Logging out...')
     if (socket) {
       socket.disconnect()
     }
@@ -542,6 +577,7 @@ export default function ChatPage() {
     </div>
   )
 }
+
 
 
 

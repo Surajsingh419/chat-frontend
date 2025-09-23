@@ -1,19 +1,27 @@
-// next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Remove the invalid allowedDevOrigins option
-  experimental: {
-    // Add valid experimental options if needed
-    // serverComponentsExternalPackages: [],
-    // appDir: true, // This is default in Next.js 13+
+  // Basic Next.js configuration
+  reactStrictMode: true,
+  
+  // Environment variables (if needed)
+  env: {
+    // Add any custom environment variables here if needed
   },
   
-  // If you need to allow external hosts for images
+  // Image domains (if you need to load images from external sources)
   images: {
     domains: ['192.168.31.210'], // Add your LAN IP if needed for images
+    remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: '192.168.31.210',
+        port: '3000',
+        pathname: '/**',
+      },
+    ],
   },
   
-  // If you need custom headers for CORS or LAN access
+  // CORS headers for LAN access (if needed)
   async headers() {
     return [
       {
@@ -21,7 +29,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Access-Control-Allow-Origin',
-            value: '*', // Be more restrictive in production
+            value: 'http://192.168.31.210:3000', // More secure than '*'
           },
           {
             key: 'Access-Control-Allow-Methods',
@@ -36,13 +44,27 @@ const nextConfig = {
     ];
   },
   
-  // Enable standalone output if you plan to deploy
-  // output: 'standalone',
+  // Turbopack configuration (replaces webpack)
+  turbopack: {
+    // Add any Turbopack-specific configuration here if needed
+    rules: {
+      // Example: If you need SVG support
+      // '*.svg': {
+      //   loaders: ['@svgr/webpack'],
+      //   as: '*.js',
+      // },
+    },
+    resolveAlias: {
+      // Example: Add aliases if needed
+      // '@': './src',
+    },
+    resolveExtensions: ['.tsx', '.ts', '.jsx', '.js', '.json'],
+  },
   
-  // Webpack configuration if needed
-  webpack: (config, { isServer }) => {
-    // Custom webpack config if needed
-    return config;
+  // Experimental features (if needed)
+  experimental: {
+    // Add experimental features here if needed
+    // optimizeCss: true,
   },
 };
 

@@ -1,4 +1,4 @@
-// src/app/chat/page.js - Complete file with fixed online indicators
+// src/app/chat/page.js - Complete file with ESLint fixes
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
@@ -30,7 +30,7 @@ const UserList = ({ onlineUsers, currentUser }) => {
         </div>
       </div>
 
-      {/* Other Online Users - Scrollable Area - FIXED ONLINE INDICATOR */}
+      {/* Other Online Users - Scrollable Area */}
       <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 min-h-0">
         <div className="p-4">
           {otherUsers.length > 0 && (
@@ -44,7 +44,7 @@ const UserList = ({ onlineUsers, currentUser }) => {
                     key={user.id || user.username || index}
                     className="flex items-center space-x-3 p-3 rounded-lg transition-all duration-200 hover:bg-gray-700/50"
                   >
-                    {/* Avatar without small green dot - REMOVED SMALL DOT */}
+                    {/* Avatar without small green dot */}
                     <div className="flex-shrink-0">
                       <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center font-bold text-white shadow-lg">
                         {user.username?.charAt(0).toUpperCase() || 'U'}
@@ -56,7 +56,7 @@ const UserList = ({ onlineUsers, currentUser }) => {
                       <p className="font-medium text-white truncate">
                         {user.username}
                       </p>
-                      {/* Single green circle with Online text - MOVED HERE */}
+                      {/* Single green circle with Online text */}
                       <div className="flex items-center mt-1">
                         <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
                         <p className="text-sm text-green-400">Online</p>
@@ -68,26 +68,26 @@ const UserList = ({ onlineUsers, currentUser }) => {
             </>
           )}
           
-          {/* Show message when only current user is online */}
+          {/* Show message when only current user is online - FIXED APOSTROPHE */}
           {otherUsers.length === 0 && (
             <div className="text-center text-gray-400 py-8">
               <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
               </svg>
-              <p className="text-sm">You're the only one online</p>
+              <p className="text-sm">{`You're the only one online`}</p>
               <p className="text-xs mt-1 opacity-75">Waiting for others to join...</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Current User Card - Fixed at Bottom - FIXED ONLINE INDICATOR */}
+      {/* Current User Card - Fixed at Bottom */}
       <div className="flex-shrink-0 p-4 border-t border-gray-700/50 bg-gray-800/50 backdrop-blur-sm">
         <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
           You
         </div>
         <div className="flex items-center space-x-3 p-3 bg-blue-600/20 border border-blue-500/30 rounded-lg">
-          {/* Avatar without small green dot - REMOVED SMALL DOT */}
+          {/* Avatar without small green dot */}
           <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center font-bold text-white flex-shrink-0">
             {currentUser?.username?.charAt(0).toUpperCase() || 'U'}
           </div>
@@ -95,7 +95,7 @@ const UserList = ({ onlineUsers, currentUser }) => {
           {/* User info with single online indicator below name */}
           <div className="flex-1 min-w-0">
             <p className="font-medium text-blue-300 truncate">{currentUser?.username || 'Unknown'}</p>
-            {/* Single green circle with Online text - MOVED HERE */}
+            {/* Single green circle with Online text */}
             <div className="flex items-center mt-1">
               <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
               <p className="text-sm text-green-400">Online</p>
@@ -341,7 +341,7 @@ const MessageInput = ({ onSendMessage, onTyping }) => {
   )
 }
 
-// Main Chat Component (REST REMAINS SAME AS PREVIOUS)
+// Main Chat Component - REST REMAINS SAME
 export default function ChatPage() {
   const [socket, setSocket] = useState(null)
   const [currentUser, setCurrentUser] = useState(null)
@@ -542,5 +542,6 @@ export default function ChatPage() {
     </div>
   )
 }
+
 
 

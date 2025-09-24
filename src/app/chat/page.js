@@ -1,4 +1,4 @@
-// src/app/chat/page.js - FIXED Responsive Private Chat
+// src/app/chat/page.js - COMPLETE UPDATED Chat with Perfect UI and Scrolling
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
@@ -26,7 +26,7 @@ const EmojiPicker = ({ onEmojiSelect, onClose }) => {
   ]
 
   return (
-    <div className="absolute bottom-12 left-0 bg-white rounded-lg shadow-xl border border-gray-200 p-3 w-64 sm:w-72 h-40 sm:h-48 overflow-y-auto z-50">
+    <div className="bg-white rounded-lg shadow-xl border border-gray-200 p-3 w-64 sm:w-72 h-40 sm:h-48 overflow-y-auto">
       <div className="grid grid-cols-6 sm:grid-cols-8 gap-1 sm:gap-2">
         {emojis.map((emoji, index) => (
           <button
@@ -75,7 +75,7 @@ const FilePreview = ({ fileData, onRemove }) => {
   )
 }
 
-// UserList for private chats only - Now responsive
+// UserList for private chats only - Responsive
 const UserList = ({ onlineUsers, currentUser, onUserSelect, activeChat, unreadCounts, isOpen, onClose }) => {
   const otherUsers = onlineUsers.filter(user => user.username !== currentUser?.username)
   
@@ -214,9 +214,10 @@ const UserList = ({ onlineUsers, currentUser, onUserSelect, activeChat, unreadCo
   )
 }
 
-// MessageList for private chats - Now responsive
+// MessageList for private chats - FIXED SCROLLING ISSUES
 const MessageList = ({ messages, currentUser, typingUsers, activeChat, onMenuOpen }) => {
   const messagesEndRef = useRef(null)
+  const messagesContainerRef = useRef(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -289,9 +290,9 @@ const MessageList = ({ messages, currentUser, typingUsers, activeChat, onMenuOpe
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-white">
-      {/* Chat Header - Now responsive */}
-      <div className="bg-white border-b border-gray-200 px-3 sm:px-6 py-3 sm:py-4 shadow-sm">
+    <div className="flex-1 flex flex-col bg-white min-h-0">
+      {/* Chat Header - Responsive */}
+      <div className="bg-white border-b border-gray-200 px-3 sm:px-6 py-3 sm:py-4 shadow-sm flex-shrink-0">
         {activeChat ? (
           <div className="flex items-center space-x-3">
             {/* Mobile menu button */}
@@ -315,7 +316,6 @@ const MessageList = ({ messages, currentUser, typingUsers, activeChat, onMenuOpe
           </div>
         ) : (
           <div className="flex items-center space-x-3">
-            {/* Mobile menu button */}
             <button
               onClick={onMenuOpen}
               className="lg:hidden p-2 -ml-2 hover:bg-gray-100 rounded-lg"
@@ -338,8 +338,15 @@ const MessageList = ({ messages, currentUser, typingUsers, activeChat, onMenuOpe
         )}
       </div>
 
-      {/* Messages Area - Now responsive */}
-      <div className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-white">
+      {/* Messages Area - FIXED FOR PROPER SCROLLING */}
+      <div 
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-white min-h-0 max-h-full"
+        style={{ 
+          scrollBehavior: 'smooth',
+          overscrollBehavior: 'contain'
+        }}
+      >
         {!activeChat ? (
           <div className="flex items-center justify-center h-full p-4">
             <div className="text-center max-w-sm">
@@ -369,7 +376,7 @@ const MessageList = ({ messages, currentUser, typingUsers, activeChat, onMenuOpe
             </div>
           </div>
         ) : (
-          <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+          <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 min-h-0">
             {/* Date header */}
             {messages.length > 0 && (
               <div className="flex justify-center">
@@ -381,9 +388,8 @@ const MessageList = ({ messages, currentUser, typingUsers, activeChat, onMenuOpe
               </div>
             )}
 
-            {/* Messages */}
+            {/* Messages - FIXED MESSAGE WRAPPING AND SCROLLING */}
             {messages.map((message, index) => {
-              // **FIXED:** Simplified message ownership checking
               const isOwnMessage = message.senderId === currentUser?.id || 
                                  message.senderUsername === currentUser?.username ||
                                  message.sender?.id === currentUser?.id ||
@@ -409,17 +415,27 @@ const MessageList = ({ messages, currentUser, typingUsers, activeChat, onMenuOpe
                       </div>
                     )}
 
-                    {/* Message Content */}
+                    {/* Message Content - FIXED WRAPPING */}
                     <div className={`flex flex-col ${isOwnMessage ? 'items-end' : 'items-start'}`}>
-                      {/* Message Bubble */}
-                      <div className={`relative px-3 sm:px-6 py-2 sm:py-4 rounded-2xl shadow-lg transition-all duration-200 hover:shadow-xl max-w-full break-words ${
+                      {/* Message Bubble - IMPROVED TEXT WRAPPING */}
+                      <div className={`relative px-3 sm:px-6 py-2 sm:py-4 rounded-2xl shadow-lg transition-all duration-200 hover:shadow-xl max-w-full min-w-0 ${
                         isOwnMessage
                           ? 'bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-br-md'
                           : 'bg-white text-gray-800 rounded-bl-md border border-gray-100'
                       }`}>
-                        {/* Text content */}
+                        {/* Text content - FIXED WORD WRAPPING */}
                         {message.content && (
-                          <p className="text-xs sm:text-sm leading-relaxed mb-1 sm:mb-2">{message.content}</p>
+                          <p 
+                            className="text-xs sm:text-sm leading-relaxed mb-1 sm:mb-2 break-words overflow-wrap-anywhere"
+                            style={{
+                              wordBreak: 'break-word',
+                              overflowWrap: 'break-word',
+                              hyphens: 'auto',
+                              whiteSpace: 'pre-wrap'
+                            }}
+                          >
+                            {message.content}
+                          </p>
                         )}
                         
                         {/* File content */}
@@ -473,7 +489,7 @@ const MessageList = ({ messages, currentUser, typingUsers, activeChat, onMenuOpe
   )
 }
 
-// MessageInput for private chats - Now responsive
+// MessageInput for private chats - PERFECTED UI with proper alignment
 const MessageInput = ({ onSendMessage, onTyping, activeChat }) => {
   const [message, setMessage] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -590,76 +606,94 @@ const MessageInput = ({ onSendMessage, onTyping, activeChat }) => {
 
   if (!activeChat) {
     return (
-      <div className="border-t border-gray-200 bg-gray-50 px-3 sm:px-6 py-6 sm:py-8">
+      <div className="border-t border-gray-200 bg-gray-50 px-4 sm:px-6 py-6 sm:py-8">
         <div className="text-center text-gray-500">
-          <p className="text-base sm:text-lg">Select a user to start messaging</p>
+          <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+          </div>
+          <p className="text-base sm:text-lg font-medium">Select a user to start messaging</p>
+          <p className="text-sm text-gray-400 mt-1">Choose someone from the sidebar to begin your conversation</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="border-t border-gray-200 bg-white">
+    <div className="border-t border-gray-200 bg-white flex-shrink-0 shadow-lg">
       {/* File Preview */}
       {selectedFile && (
-        <div className="px-3 sm:px-6 pt-3 sm:pt-4">
+        <div className="px-4 sm:px-6 pt-4">
           <FilePreview fileData={selectedFile} onRemove={removeFile} />
         </div>
       )}
       
-      <div className="px-3 sm:px-6 py-3 sm:py-4">
+      {/* PERFECTED Input Container */}
+      <div className="px-4 sm:px-6 py-4">
         <form onSubmit={handleSubmit}>
-          <div className="flex items-end space-x-2 sm:space-x-4">
-            {/* File Upload Button */}
-            <div className="relative">
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileSelect}
-                className="hidden"
-                accept="image/*,application/pdf,.doc,.docx,.txt,.mp4,.mp3,.zip"
-              />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex-shrink-0 p-2 sm:p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"
-                title="Attach file"
-              >
-                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                </svg>
-              </button>
+          <div className="flex items-end gap-3 bg-gray-50 rounded-2xl p-2 border border-gray-200 hover:border-gray-300 focus-within:border-purple-500 focus-within:ring-2 focus-within:ring-purple-500/20 transition-all duration-200">
+            
+            {/* Left Actions Container */}
+            <div className="flex items-center gap-1">
+              {/* File Upload Button - PERFECTED */}
+              <div className="relative">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  accept="image/*,application/pdf,.doc,.docx,.txt,.mp4,.mp3,.zip"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="group flex items-center justify-center w-10 h-10 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-xl transition-all duration-200 transform hover:scale-105 active:scale-95"
+                  title="Attach file"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Emoji Button - PERFECTED */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  className={`group flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-200 transform hover:scale-105 active:scale-95 ${
+                    showEmojiPicker 
+                      ? 'text-purple-600 bg-purple-50' 
+                      : 'text-gray-500 hover:text-purple-600 hover:bg-purple-50'
+                  }`}
+                  title="Add emoji"
+                >
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM8.5 9c.83 0 1.5.67 1.5 1.5S9.33 12 8.5 12 7 11.33 7 10.5 7.67 9 8.5 9zm7 0c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5S14.67 9 15.5 9zM12 17.5c-2.33 0-4.31-1.46-5.11-3.5h10.22c-.8 2.04-2.78 3.5-5.11 3.5z"/>
+                  </svg>
+                </button>
+                
+                {/* Emoji Picker - IMPROVED positioning */}
+                {showEmojiPicker && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setShowEmojiPicker(false)}
+                    ></div>
+                    <div className="absolute bottom-14 left-0 z-50">
+                      <EmojiPicker 
+                        onEmojiSelect={handleEmojiSelect}
+                        onClose={() => setShowEmojiPicker(false)}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
 
-            {/* Emoji button */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                className="flex-shrink-0 p-2 sm:p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"
-                title="Add emoji"
-              >
-                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM8.5 9c.83 0 1.5.67 1.5 1.5S9.33 12 8.5 12 7 11.33 7 10.5 7.67 9 8.5 9zm7 0c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5S14.67 9 15.5 9zM12 17.5c-2.33 0-4.31-1.46-5.11-3.5h10.22c-.8 2.04-2.78 3.5-5.11 3.5z"/>
-                </svg>
-              </button>
-              
-              {showEmojiPicker && (
-                <>
-                  <div 
-                    className="fixed inset-0 z-40" 
-                    onClick={() => setShowEmojiPicker(false)}
-                  ></div>
-                  <EmojiPicker 
-                    onEmojiSelect={handleEmojiSelect}
-                    onClose={() => setShowEmojiPicker(false)}
-                  />
-                </>
-              )}
-            </div>
-
-            {/* Message input */}
-            <div className="flex-1 relative">
+            {/* Message Input Container - PERFECTED */}
+            <div className="flex-1 min-w-0">
               <textarea
                 ref={textareaRef}
                 value={message}
@@ -667,37 +701,54 @@ const MessageInput = ({ onSendMessage, onTyping, activeChat }) => {
                 onKeyPress={handleKeyPress}
                 placeholder={`Message ${activeChat.username}...`}
                 rows={1}
-                className="w-full px-3 sm:px-4 py-2 sm:py-3 pr-10 sm:pr-12 border border-gray-300 rounded-2xl sm:rounded-3xl focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none transition-all duration-200 text-sm leading-relaxed"
+                className="w-full px-4 py-3 bg-transparent border-none resize-none focus:outline-none text-gray-900 placeholder-gray-500 text-sm leading-relaxed"
                 style={{
-                  minHeight: '40px',
+                  minHeight: '44px',
                   maxHeight: '120px'
                 }}
                 disabled={isUploading}
               />
             </div>
 
-            {/* Send button */}
-            <button
-              type="submit"
-              disabled={(!message.trim() && !selectedFile) || isUploading}
-              className="flex-shrink-0 p-2 sm:p-3 rounded-full focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white"
-            >
-              {isUploading ? (
-                <div className="w-5 h-5 sm:w-6 sm:h-6 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-              ) : (
-                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
-              )}
-            </button>
+            {/* Send Button - PERFECTED alignment */}
+            <div className="flex items-center">
+              <button
+                type="submit"
+                disabled={(!message.trim() && !selectedFile) || isUploading}
+                className="group flex items-center justify-center w-11 h-11 rounded-xl transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg hover:shadow-xl bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white"
+                title="Send message"
+              >
+                {isUploading ? (
+                  <div className="w-6 h-6 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                ) : (
+                  <svg className="w-6 h-6 transform group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                )}
+              </button>
+            </div>
           </div>
         </form>
+        
+        {/* Typing Indicator */}
+        {isTyping && activeChat && (
+          <div className="flex items-center gap-2 mt-2 px-2">
+            <div className="text-xs text-gray-500">
+              Typing to {activeChat.username}...
+            </div>
+            <div className="flex gap-1">
+              <div className="w-1 h-1 bg-purple-500 rounded-full animate-bounce"></div>
+              <div className="w-1 h-1 bg-purple-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+              <div className="w-1 h-1 bg-purple-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
-// Main Chat Component - Now fully responsive with FIXED message handling
+// Main Chat Component - COMPLETE with perfect scrolling and UI
 export default function ChatPage() {
   const [socket, setSocket] = useState(null)
   const [currentUser, setCurrentUser] = useState(null)
@@ -783,7 +834,6 @@ export default function ChatPage() {
       }
     }
 
-    // **FIXED:** Simplified message handling logic
     const handleNewMessage = (message) => {
       console.log('📨 New private message received:', message)
       
@@ -793,7 +843,6 @@ export default function ChatPage() {
       
       console.log('Message details:', { senderId, receiverId, senderUsername, currentUserId: currentUser?.id, activeChatId: activeChat?.id })
       
-      // Check if this message belongs to current active chat
       const isForCurrentChat = activeChat && (
         (senderId === activeChat.id && receiverId === currentUser?.id) ||
         (senderId === currentUser?.id && receiverId === activeChat.id)
@@ -804,7 +853,6 @@ export default function ChatPage() {
         setMessages(prev => [...prev, message])
       } else if (senderUsername !== currentUser?.username && senderId && senderId !== currentUser?.id) {
         console.log('📬 Message is for different chat, updating unread count for senderId:', senderId)
-        // Update unread count for messages from other users
         setUnreadCounts(prev => ({
           ...prev,
           [senderId]: (prev[senderId] || 0) + 1
@@ -844,7 +892,6 @@ export default function ChatPage() {
     socket.on('typing', handleUserTyping)
     socket.on('stopTyping', handleUserStoppedTyping)
 
-    // Cleanup function
     return () => {
       socket.off('connect', handleConnect)
       socket.off('disconnect', handleDisconnect)
@@ -871,21 +918,19 @@ export default function ChatPage() {
   const handleUserSelect = useCallback((user) => {
     console.log('👤 User selected:', user)
     
-    // Clear unread count for this user
     setUnreadCounts(prev => {
       const newCounts = { ...prev }
       delete newCounts[user.id]
       return newCounts
     })
     
-    // Join private chat room
     if (socket) {
       socket.emit('joinPrivateChat', { targetUserId: user.id })
     }
     
     setActiveChat(user)
-    setMessages([]) // Clear messages while loading
-    setTypingUsers([]) // Clear typing indicators
+    setMessages([])
+    setTypingUsers([])
   }, [socket])
 
   const handleSendMessage = useCallback((messageData) => {
@@ -970,7 +1015,7 @@ export default function ChatPage() {
       
       <div className="flex-1 flex flex-col bg-white shadow-xl min-w-0">
         {/* Connection Status Bar */}
-        <div className={`px-3 sm:px-6 py-1 sm:py-2 text-xs sm:text-sm text-center transition-all ${
+        <div className={`px-3 sm:px-6 py-1 sm:py-2 text-xs sm:text-sm text-center transition-all flex-shrink-0 ${
           isConnected 
             ? 'bg-green-100 text-green-800' 
             : 'bg-red-100 text-red-800'
@@ -1003,8 +1048,8 @@ export default function ChatPage() {
           activeChat={activeChat}
         />
 
-        {/* User Info & Logout Bar - Now responsive */}
-        <div className="bg-gray-50 border-t border-gray-200 px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between">
+        {/* User Info & Logout Bar - Responsive */}
+        <div className="bg-gray-50 border-t border-gray-200 px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
             <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center font-bold text-white text-xs sm:text-sm flex-shrink-0">
               {currentUser?.username?.charAt(0).toUpperCase() || 'U'}
@@ -1040,4 +1085,3 @@ export default function ChatPage() {
     </div>
   )
 }
-

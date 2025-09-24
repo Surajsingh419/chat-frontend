@@ -1,4 +1,4 @@
-// src/app/chat/page.js - COMPLETE UPDATED Chat with Perfect UI and Scrolling
+// src/app/chat/page.js - COMPLETE UPDATED Chat with Online/Offline Status
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
@@ -20,9 +20,7 @@ const EmojiPicker = ({ onEmojiSelect, onClose }) => {
     '👇', '☝️', '✋', '🤚', '🖐️', '🖖', '👋', '🤝', '👏', '🙌',
     '👐', '🤲', '🤜', '🤛', '✊', '👊', '🤳', '💪', '🦵', '🦶',
     '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔',
-    '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '♥️',
-    '🔥', '💯', '💢', '💥', '💫', '💦', '💨', '🕳️', '💬', '👁️‍🗨️',
-    '🗨️', '🗯️', '💭', '💤'
+    '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '♥️'
   ]
 
   return (
@@ -44,8 +42,8 @@ const EmojiPicker = ({ onEmojiSelect, onClose }) => {
 
 // File preview component
 const FilePreview = ({ fileData, onRemove }) => {
-  const isImage = fileData.mimetype?.startsWith('image/')
-  
+  const isImage = fileData.mimetype?.startsWith('image')
+
   return (
     <div className="flex items-center space-x-2 sm:space-x-3 bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3 mb-3">
       <div className="flex-shrink-0">
@@ -65,7 +63,7 @@ const FilePreview = ({ fileData, onRemove }) => {
         <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">{fileData.name}</p>
         <p className="text-xs text-gray-500">{(fileData.size / 1024 / 1024).toFixed(2)} MB</p>
       </div>
-      <button
+      <button 
         onClick={onRemove}
         className="text-gray-400 hover:text-gray-600 p-1"
       >
@@ -75,10 +73,12 @@ const FilePreview = ({ fileData, onRemove }) => {
   )
 }
 
-// UserList for private chats only - Responsive
-const UserList = ({ onlineUsers, currentUser, onUserSelect, activeChat, unreadCounts, isOpen, onClose }) => {
-  const otherUsers = onlineUsers.filter(user => user.username !== currentUser?.username)
-  
+// UserList for private chats - Updated to show both online and offline users
+const UserList = ({ allUsers, currentUser, onUserSelect, activeChat, unreadCounts, isOpen, onClose }) => {
+  // Separate online and offline users
+  const onlineUsers = allUsers.filter(user => user.username !== currentUser?.username && user.isOnline)
+  const offlineUsers = allUsers.filter(user => user.username !== currentUser?.username && !user.isOnline)
+
   return (
     <>
       {/* Mobile Overlay */}
@@ -88,11 +88,10 @@ const UserList = ({ onlineUsers, currentUser, onUserSelect, activeChat, unreadCo
           onClick={onClose}
         />
       )}
-      
+
       {/* Sidebar */}
-      <div className={`fixed lg:relative inset-y-0 left-0 z-50 lg:z-0 w-80 sm:w-96 lg:w-80 xl:w-96 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white flex flex-col shadow-2xl h-full transform transition-transform duration-300 ease-in-out lg:transform-none ${
-        isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-      }`}>
+      <div className={`fixed lg:relative inset-y-0 left-0 z-50 lg:z-0 w-80 sm:w-96 lg:w-80 xl:w-96 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white flex flex-col shadow-2xl h-full transform transition-transform duration-300 ease-in-out lg:transform-none ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+
         {/* Header */}
         <div className="p-4 sm:p-6 border-b border-gray-700/50 bg-gray-800/50 backdrop-blur-sm flex-shrink-0">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
@@ -112,69 +111,119 @@ const UserList = ({ onlineUsers, currentUser, onUserSelect, activeChat, unreadCo
               </button>
             </div>
           </div>
+
           <div className="flex items-center space-x-2 text-sm text-gray-300">
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="3"/>
               <path d="M12 1v6m0 10v6m11-7h-6M7 12H1"/>
             </svg>
-            <span className="text-xs sm:text-sm">{onlineUsers.length} member{onlineUsers.length !== 1 ? 's' : ''} online</span>
-            {Object.keys(unreadCounts).length > 0 && (
-              <>
-                <span>•</span>
-                <span className="text-red-400 text-xs sm:text-sm">{Object.values(unreadCounts).reduce((a, b) => a + b, 0)} unread</span>
-              </>
-            )}
+            <span className="text-xs sm:text-sm">
+              {onlineUsers.length} online • {offlineUsers.length} offline
+              {Object.keys(unreadCounts).length > 0 && (
+                <span className="text-red-400 text-xs sm:text-sm"> • {Object.values(unreadCounts).reduce((a, b) => a + b, 0)} unread</span>
+              )}
+            </span>
           </div>
         </div>
 
         {/* User List */}
         <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 min-h-0">
           <div className="p-3 sm:p-4">
-            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-              Available Users — {otherUsers.length}
-            </div>
-            {otherUsers.length > 0 ? (
-              <div className="space-y-2">
-                {otherUsers.map((user, index) => (
-                  <div
-                    key={user.id || user.username || index}
-                    onClick={() => {
-                      onUserSelect(user)
-                      onClose() // Close sidebar on mobile after selection
-                    }}
-                    className={`flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 rounded-lg transition-all duration-200 cursor-pointer relative ${
-                      activeChat?.id === user.id
-                        ? 'bg-purple-600/30 border border-purple-500/50'
-                        : 'hover:bg-gray-700/50'
-                    }`}
-                  >
-                    <div className="flex-shrink-0 relative">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 rounded-full flex items-center justify-center font-bold text-white shadow-lg text-sm sm:text-base">
-                        {user.username?.charAt(0).toUpperCase() || 'U'}
-                      </div>
-                      <div className="absolute -bottom-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-400 rounded-full border-2 border-gray-800"></div>
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-white truncate text-sm sm:text-base">
-                        {user.username}
-                      </p>
-                      <p className="text-xs sm:text-sm text-green-400">Online</p>
-                    </div>
 
-                    {unreadCounts[user.id] && (
-                      <div className="bg-red-500 text-white text-xs rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center font-bold">
-                        {unreadCounts[user.id]}
+            {/* Online Users Section */}
+            {onlineUsers.length > 0 && (
+              <>
+                <div className="text-xs font-semibold text-green-400 uppercase tracking-wider mb-3 flex items-center">
+                  <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+                  Online ({onlineUsers.length})
+                </div>
+                <div className="space-y-2 mb-6">
+                  {onlineUsers.map((user, index) => (
+                    <div
+                      key={user.id || user.username + index}
+                      onClick={() => {
+                        onUserSelect(user)
+                        onClose() // Close sidebar on mobile after selection
+                      }}
+                      className={`flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 rounded-lg transition-all duration-200 cursor-pointer relative ${
+                        activeChat?.id === user.id 
+                          ? 'bg-purple-600/30 border border-purple-500/50' 
+                          : 'hover:bg-gray-700/50'
+                      }`}
+                    >
+                      <div className="flex-shrink-0 relative">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 rounded-full flex items-center justify-center font-bold text-white shadow-lg text-sm sm:text-base">
+                          {user.username?.charAt(0).toUpperCase() || 'U'}
+                        </div>
+                        <div className="absolute -bottom-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-400 rounded-full border-2 border-gray-800"></div>
                       </div>
-                    )}
 
-                    <div className="text-purple-400 text-sm sm:text-base">
-                      💬
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-white truncate text-sm sm:text-base">
+                          {user.username}
+                        </p>
+                        <p className="text-xs sm:text-sm text-green-400">Online</p>
+                      </div>
+
+                      {unreadCounts[user.id] && (
+                        <div className="bg-red-500 text-white text-xs rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center font-bold">
+                          {unreadCounts[user.id]}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* Offline Users Section */}
+            {offlineUsers.length > 0 && (
+              <>
+                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full mr-2"></div>
+                  Offline ({offlineUsers.length})
+                </div>
+                <div className="space-y-2">
+                  {offlineUsers.map((user, index) => (
+                    <div
+                      key={user.id || user.username + index}
+                      onClick={() => {
+                        onUserSelect(user)
+                        onClose() // Close sidebar on mobile after selection
+                      }}
+                      className={`flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 rounded-lg transition-all duration-200 cursor-pointer relative opacity-70 hover:opacity-100 ${
+                        activeChat?.id === user.id 
+                          ? 'bg-purple-600/30 border border-purple-500/50' 
+                          : 'hover:bg-gray-700/50'
+                      }`}
+                    >
+                      <div className="flex-shrink-0 relative">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-gray-500 via-gray-600 to-gray-700 rounded-full flex items-center justify-center font-bold text-white shadow-lg text-sm sm:text-base">
+                          {user.username?.charAt(0).toUpperCase() || 'U'}
+                        </div>
+                        <div className="absolute -bottom-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-gray-400 rounded-full border-2 border-gray-800"></div>
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-white truncate text-sm sm:text-base">
+                          {user.username}
+                        </p>
+                        <p className="text-xs sm:text-sm text-gray-400">Offline</p>
+                      </div>
+
+                      {unreadCounts[user.id] && (
+                        <div className="bg-red-500 text-white text-xs rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center font-bold">
+                          {unreadCounts[user.id]}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* No Users Available */}
+            {onlineUsers.length === 0 && offlineUsers.length === 0 && (
               <div className="text-center text-gray-400 py-6 sm:py-8">
                 <svg className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -196,12 +245,12 @@ const UserList = ({ onlineUsers, currentUser, onUserSelect, activeChat, unreadCo
               {currentUser?.username?.charAt(0).toUpperCase() || 'U'}
               <div className="absolute -bottom-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-400 rounded-full border-2 border-gray-800"></div>
             </div>
-            
+
             <div className="flex-1 min-w-0">
               <p className="font-medium text-purple-300 truncate text-sm sm:text-base">{currentUser?.username || 'Unknown'}</p>
               <p className="text-xs sm:text-sm text-green-400">Online</p>
             </div>
-            
+
             <div className="text-gray-400 hover:text-white cursor-pointer transition-colors">
               <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
@@ -214,13 +263,13 @@ const UserList = ({ onlineUsers, currentUser, onUserSelect, activeChat, unreadCo
   )
 }
 
-// MessageList for private chats - FIXED SCROLLING ISSUES
+// MessageList for private chats - Updated with online/offline status
 const MessageList = ({ messages, currentUser, typingUsers, activeChat, onMenuOpen }) => {
   const messagesEndRef = useRef(null)
   const messagesContainerRef = useRef(null)
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
   useEffect(() => {
@@ -241,16 +290,20 @@ const MessageList = ({ messages, currentUser, typingUsers, activeChat, onMenuOpe
     const yesterday = new Date(today)
     yesterday.setDate(yesterday.getDate() - 1)
 
-    if (date.toDateString() === today.toDateString()) return 'Today'
-    if (date.toDateString() === yesterday.toDateString()) return 'Yesterday'
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today'
+    }
+    if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday'
+    }
     return date.toLocaleDateString()
   }
 
   const renderFileMessage = (message) => {
-    const { fileData } = message
+    const fileData = message.fileData
     if (!fileData) return null
 
-    const isImage = fileData.mimetype?.startsWith('image/')
+    const isImage = fileData.mimetype?.startsWith('image')
     const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000'
     const fileUrl = `${serverUrl}${fileData.url}`
 
@@ -277,11 +330,11 @@ const MessageList = ({ messages, currentUser, typingUsers, activeChat, onMenuOpe
               <p className="text-xs sm:text-sm font-medium truncate">{fileData.originalName}</p>
               <p className="text-xs opacity-75">{(fileData.size / 1024 / 1024).toFixed(2)} MB</p>
             </div>
-            <button
+            <button 
               onClick={() => window.open(fileUrl, '_blank')}
               className="text-blue-400 hover:text-blue-300 text-sm"
             >
-              ⬇️
+              📁
             </button>
           </div>
         )}
@@ -291,12 +344,12 @@ const MessageList = ({ messages, currentUser, typingUsers, activeChat, onMenuOpe
 
   return (
     <div className="flex-1 flex flex-col bg-white min-h-0">
-      {/* Chat Header - Responsive */}
+      {/* Chat Header - Updated with online/offline status */}
       <div className="bg-white border-b border-gray-200 px-3 sm:px-6 py-3 sm:py-4 shadow-sm flex-shrink-0">
         {activeChat ? (
           <div className="flex items-center space-x-3">
             {/* Mobile menu button */}
-            <button
+            <button 
               onClick={onMenuOpen}
               className="lg:hidden p-2 -ml-2 hover:bg-gray-100 rounded-lg"
             >
@@ -304,19 +357,22 @@ const MessageList = ({ messages, currentUser, typingUsers, activeChat, onMenuOpe
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            
+
             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center font-bold text-white shadow-lg relative text-sm sm:text-base">
               {activeChat.username?.charAt(0).toUpperCase() || 'U'}
-              <div className="absolute -bottom-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-green-400 rounded-full border-2 border-white"></div>
+              <div className={`absolute -bottom-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 rounded-full border-2 border-white ${activeChat.isOnline ? 'bg-green-400' : 'bg-gray-400'}`}></div>
             </div>
+
             <div className="flex-1 min-w-0">
               <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate">{activeChat.username}</h1>
-              <p className="text-xs sm:text-sm text-green-500">Online</p>
+              <p className={`text-xs sm:text-sm ${activeChat.isOnline ? 'text-green-500' : 'text-gray-500'}`}>
+                {activeChat.isOnline ? 'Online' : 'Offline'}
+              </p>
             </div>
           </div>
         ) : (
           <div className="flex items-center space-x-3">
-            <button
+            <button 
               onClick={onMenuOpen}
               className="lg:hidden p-2 -ml-2 hover:bg-gray-100 rounded-lg"
             >
@@ -324,12 +380,13 @@ const MessageList = ({ messages, currentUser, typingUsers, activeChat, onMenuOpe
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            
+
             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-gray-400 to-gray-500 rounded-lg flex items-center justify-center">
               <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
             </div>
+
             <div className="flex-1 min-w-0">
               <h1 className="text-lg sm:text-xl font-bold text-gray-900">Select a chat</h1>
               <p className="text-xs sm:text-sm text-gray-500">Choose someone to start messaging</p>
@@ -338,14 +395,11 @@ const MessageList = ({ messages, currentUser, typingUsers, activeChat, onMenuOpe
         )}
       </div>
 
-      {/* Messages Area - FIXED FOR PROPER SCROLLING */}
+      {/* Messages Area */}
       <div 
         ref={messagesContainerRef}
         className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-white min-h-0 max-h-full"
-        style={{ 
-          scrollBehavior: 'smooth',
-          overscrollBehavior: 'contain'
-        }}
+        style={{ scrollBehavior: 'smooth', overscrollBehavior: 'contain' }}
       >
         {!activeChat ? (
           <div className="flex items-center justify-center h-full p-4">
@@ -357,7 +411,8 @@ const MessageList = ({ messages, currentUser, typingUsers, activeChat, onMenuOpe
                 Welcome to Private Chat
               </h3>
               <p className="text-gray-500 text-sm sm:text-lg leading-relaxed">
-                Select someone from the sidebar to start a private conversation. All your messages are secure and only visible between you two.
+                Select someone from the sidebar to start a private conversation. 
+                All your messages are secure and only visible between you two.
               </p>
             </div>
           </div>
@@ -365,7 +420,7 @@ const MessageList = ({ messages, currentUser, typingUsers, activeChat, onMenuOpe
           <div className="flex items-center justify-center h-full p-4">
             <div className="text-center max-w-sm">
               <div className="w-24 h-24 sm:w-32 sm:h-32 bg-gradient-to-br from-purple-100 via-pink-100 to-red-100 rounded-full flex items-center justify-center mx-auto mb-6 sm:mb-8 shadow-xl">
-                <div className="text-4xl sm:text-6xl">🚀</div>
+                <div className="text-4xl sm:text-6xl">👋</div>
               </div>
               <h3 className="text-xl sm:text-3xl font-bold text-gray-800 mb-3 sm:mb-4">
                 Start chatting with {activeChat.username}!
@@ -388,26 +443,24 @@ const MessageList = ({ messages, currentUser, typingUsers, activeChat, onMenuOpe
               </div>
             )}
 
-            {/* Messages - FIXED MESSAGE WRAPPING AND SCROLLING */}
+            {/* Messages */}
             {messages.map((message, index) => {
               const isOwnMessage = message.senderId === currentUser?.id || 
-                                 message.senderUsername === currentUser?.username ||
-                                 message.sender?.id === currentUser?.id ||
-                                 message.sender?._id === currentUser?.id
+                                 message.senderUsername === currentUser?.username || 
+                                 message.sender?.id === currentUser?.id
+              const showAvatar = index === 0 || messages[index - 1]?.senderId !== message.senderId || 
+                               messages[index - 1]?.senderUsername !== message.senderUsername
 
-              const showAvatar = index === 0 || 
-                               (messages[index - 1]?.senderId !== message.senderId &&
-                                messages[index - 1]?.senderUsername !== message.senderUsername)
-              
               return (
                 <div key={message.id || index} className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group`}>
                   <div className={`flex max-w-[85%] sm:max-w-[70%] ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'} items-end space-x-2 sm:space-x-3`}>
+
                     {/* Avatar */}
                     {!isOwnMessage && (
                       <div className="flex-shrink-0 mb-1">
                         {showAvatar ? (
                           <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg text-sm">
-                            {(message.senderUsername || message.sender?.username || 'U')?.charAt(0).toUpperCase()}
+                            {((message.senderUsername || message.sender?.username) || 'U').charAt(0).toUpperCase()}
                           </div>
                         ) : (
                           <div className="w-8 h-8 sm:w-10 sm:h-10"></div>
@@ -415,44 +468,38 @@ const MessageList = ({ messages, currentUser, typingUsers, activeChat, onMenuOpe
                       </div>
                     )}
 
-                    {/* Message Content - FIXED WRAPPING */}
+                    {/* Message Content */}
                     <div className={`flex flex-col ${isOwnMessage ? 'items-end' : 'items-start'}`}>
-                      {/* Message Bubble - IMPROVED TEXT WRAPPING */}
+                      {/* Message Bubble */}
                       <div className={`relative px-3 sm:px-6 py-2 sm:py-4 rounded-2xl shadow-lg transition-all duration-200 hover:shadow-xl max-w-full min-w-0 ${
-                        isOwnMessage
-                          ? 'bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-br-md'
+                        isOwnMessage 
+                          ? 'bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-br-md' 
                           : 'bg-white text-gray-800 rounded-bl-md border border-gray-100'
                       }`}>
-                        {/* Text content - FIXED WORD WRAPPING */}
+
+                        {/* Text content */}
                         {message.content && (
-                          <p 
-                            className="text-xs sm:text-sm leading-relaxed mb-1 sm:mb-2 break-words overflow-wrap-anywhere"
-                            style={{
-                              wordBreak: 'break-word',
-                              overflowWrap: 'break-word',
-                              hyphens: 'auto',
-                              whiteSpace: 'pre-wrap'
-                            }}
-                          >
+                          <p className="text-xs sm:text-sm leading-relaxed mb-1 sm:mb-2 break-words overflow-wrap-anywhere" 
+                             style={{ wordBreak: 'break-word', overflowWrap: 'break-word', hyphens: 'auto', whiteSpace: 'pre-wrap' }}>
                             {message.content}
                           </p>
                         )}
-                        
+
                         {/* File content */}
                         {message.messageType === 'file' && renderFileMessage(message)}
-                        
+
                         {/* Time */}
                         <div className={`text-xs mt-1 sm:mt-2 ${isOwnMessage ? 'text-purple-100' : 'text-gray-500'}`}>
                           {formatTime(message.createdAt)}
                         </div>
-
-                        {/* Message tail */}
-                        <div className={`absolute bottom-0 ${
-                          isOwnMessage 
-                            ? '-right-2 border-l-8 border-l-purple-600 border-t-8 border-t-transparent border-b-8 border-b-transparent' 
-                            : '-left-2 border-r-8 border-r-white border-t-8 border-t-transparent border-b-8 border-b-transparent'
-                        } w-0 h-0`}></div>
                       </div>
+
+                      {/* Message tail */}
+                      <div className={`absolute bottom-0 ${
+                        isOwnMessage 
+                          ? '-right-2 border-l-8 border-l-purple-600 border-t-8 border-t-transparent border-b-8 border-b-transparent' 
+                          : '-left-2 border-r-8 border-r-white border-t-8 border-t-transparent border-b-8 border-b-transparent'
+                      } w-0 h-0`}></div>
                     </div>
                   </div>
                 </div>
@@ -468,9 +515,7 @@ const MessageList = ({ messages, currentUser, typingUsers, activeChat, onMenuOpe
                   </div>
                   <div className="bg-white px-3 sm:px-4 py-2 sm:py-3 rounded-2xl rounded-bl-md shadow-lg border border-gray-100">
                     <div className="flex items-center space-x-2">
-                      <span className="text-xs sm:text-sm text-gray-600">
-                        {activeChat?.username} is typing
-                      </span>
+                      <span className="text-xs sm:text-sm text-gray-600">{activeChat?.username} is typing</span>
                       <div className="flex space-x-1">
                         <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-purple-500 rounded-full animate-bounce"></div>
                         <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-purple-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
@@ -481,6 +526,7 @@ const MessageList = ({ messages, currentUser, typingUsers, activeChat, onMenuOpe
                 </div>
               </div>
             )}
+
             <div ref={messagesEndRef} />
           </div>
         )}
@@ -489,7 +535,7 @@ const MessageList = ({ messages, currentUser, typingUsers, activeChat, onMenuOpe
   )
 }
 
-// MessageInput for private chats - PERFECTED UI with proper alignment
+// MessageInput for private chats - No changes needed here
 const MessageInput = ({ onSendMessage, onTyping, activeChat }) => {
   const [message, setMessage] = useState('')
   const [isTyping, setIsTyping] = useState(false)
@@ -501,9 +547,8 @@ const MessageInput = ({ onSendMessage, onTyping, activeChat }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
     if (!activeChat) return
-    
+
     if (selectedFile) {
       await handleFileUpload()
     } else if (message.trim()) {
@@ -513,7 +558,7 @@ const MessageInput = ({ onSendMessage, onTyping, activeChat }) => {
       })
       setMessage('')
     }
-    
+
     if (isTyping) {
       setIsTyping(false)
       onTyping(false)
@@ -522,28 +567,26 @@ const MessageInput = ({ onSendMessage, onTyping, activeChat }) => {
 
   const handleFileUpload = async () => {
     if (!selectedFile || !activeChat) return
-    
+
     setIsUploading(true)
     try {
       const formData = new FormData()
       formData.append('file', selectedFile)
-      
+
       const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:5000'
       const response = await fetch(`${serverUrl}/api/upload`, {
         method: 'POST',
         body: formData
       })
-      
+
       if (response.ok) {
         const fileData = await response.json()
-        
         onSendMessage({
           content: message.trim() || '',
-          messageType: fileData.mimetype.startsWith('image/') ? 'image' : 'file',
+          messageType: fileData.mimetype.startsWith('image') ? 'image' : 'file',
           fileData: fileData,
           targetUserId: activeChat.id
         })
-        
         setSelectedFile(null)
         setMessage('')
       } else {
@@ -558,16 +601,16 @@ const MessageInput = ({ onSendMessage, onTyping, activeChat }) => {
 
   const handleChange = (e) => {
     setMessage(e.target.value)
-    
+
     // Auto-resize textarea
     const textarea = textareaRef.current
     if (textarea) {
       textarea.style.height = 'auto'
       textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px'
     }
-    
+
     if (!activeChat) return
-    
+
     if (!isTyping && e.target.value.trim()) {
       setIsTyping(true)
       onTyping(true)
@@ -628,15 +671,15 @@ const MessageInput = ({ onSendMessage, onTyping, activeChat }) => {
           <FilePreview fileData={selectedFile} onRemove={removeFile} />
         </div>
       )}
-      
-      {/* PERFECTED Input Container */}
+
+      {/* Input Container */}
       <div className="px-4 sm:px-6 py-4">
         <form onSubmit={handleSubmit}>
           <div className="flex items-end gap-3 bg-gray-50 rounded-2xl p-2 border border-gray-200 hover:border-gray-300 focus-within:border-purple-500 focus-within:ring-2 focus-within:ring-purple-500/20 transition-all duration-200">
-            
+
             {/* Left Actions Container */}
             <div className="flex items-center gap-1">
-              {/* File Upload Button - PERFECTED */}
+              {/* File Upload Button */}
               <div className="relative">
                 <input
                   type="file"
@@ -657,7 +700,7 @@ const MessageInput = ({ onSendMessage, onTyping, activeChat }) => {
                 </button>
               </div>
 
-              {/* Emoji Button - PERFECTED */}
+              {/* Emoji Button */}
               <div className="relative">
                 <button
                   type="button"
@@ -670,29 +713,26 @@ const MessageInput = ({ onSendMessage, onTyping, activeChat }) => {
                   title="Add emoji"
                 >
                   <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM8.5 9c.83 0 1.5.67 1.5 1.5S9.33 12 8.5 12 7 11.33 7 10.5 7.67 9 8.5 9zm7 0c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5S14.67 9 15.5 9zM12 17.5c-2.33 0-4.31-1.46-5.11-3.5h10.22c-.8 2.04-2.78 3.5-5.11 3.5z"/>
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM8.5 9c.83 0 1.5.67 1.5 1.5S9.33 12 8.5 12 7 11.33 7 10.5 7.67 9 8.5 9zm7 0c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5S14.67 9 15.5 9zM12 17.5c-2.33 0-4.31-1.46-5.11-3.5h10.22c-.8 2.04-2.78 3.5-5.11 3.5z" />
                   </svg>
                 </button>
-                
-                {/* Emoji Picker - IMPROVED positioning */}
+
+                {/* Emoji Picker */}
                 {showEmojiPicker && (
                   <>
                     <div 
                       className="fixed inset-0 z-40" 
                       onClick={() => setShowEmojiPicker(false)}
-                    ></div>
+                    />
                     <div className="absolute bottom-14 left-0 z-50">
-                      <EmojiPicker 
-                        onEmojiSelect={handleEmojiSelect}
-                        onClose={() => setShowEmojiPicker(false)}
-                      />
+                      <EmojiPicker onEmojiSelect={handleEmojiSelect} onClose={() => setShowEmojiPicker(false)} />
                     </div>
                   </>
                 )}
               </div>
             </div>
 
-            {/* Message Input Container - PERFECTED */}
+            {/* Message Input Container */}
             <div className="flex-1 min-w-0">
               <textarea
                 ref={textareaRef}
@@ -702,15 +742,12 @@ const MessageInput = ({ onSendMessage, onTyping, activeChat }) => {
                 placeholder={`Message ${activeChat.username}...`}
                 rows={1}
                 className="w-full px-4 py-3 bg-transparent border-none resize-none focus:outline-none text-gray-900 placeholder-gray-500 text-sm leading-relaxed"
-                style={{
-                  minHeight: '44px',
-                  maxHeight: '120px'
-                }}
+                style={{ minHeight: '44px', maxHeight: '120px' }}
                 disabled={isUploading}
               />
             </div>
 
-            {/* Send Button - PERFECTED alignment */}
+            {/* Send Button */}
             <div className="flex items-center">
               <button
                 type="submit"
@@ -729,7 +766,7 @@ const MessageInput = ({ onSendMessage, onTyping, activeChat }) => {
             </div>
           </div>
         </form>
-        
+
         {/* Typing Indicator */}
         {isTyping && activeChat && (
           <div className="flex items-center gap-2 mt-2 px-2">
@@ -748,12 +785,12 @@ const MessageInput = ({ onSendMessage, onTyping, activeChat }) => {
   )
 }
 
-// Main Chat Component - COMPLETE with perfect scrolling and UI
+// Main Chat Component - Updated to handle all users with online/offline status
 export default function ChatPage() {
   const [socket, setSocket] = useState(null)
   const [currentUser, setCurrentUser] = useState(null)
   const [messages, setMessages] = useState([])
-  const [onlineUsers, setOnlineUsers] = useState([])
+  const [allUsers, setAllUsers] = useState([]) // Changed from onlineUsers to allUsers
   const [typingUsers, setTypingUsers] = useState([])
   const [activeChat, setActiveChat] = useState(null)
   const [unreadCounts, setUnreadCounts] = useState({})
@@ -761,6 +798,7 @@ export default function ChatPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [shouldRedirect, setShouldRedirect] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
   const router = useRouter()
 
   // Initialize user and socket
@@ -804,7 +842,7 @@ export default function ChatPage() {
     }
   }, [shouldRedirect, router])
 
-  // Socket event listeners
+  // Socket event listeners - Updated to handle all users
   useEffect(() => {
     if (!socket || !currentUser) return
 
@@ -814,12 +852,12 @@ export default function ChatPage() {
     }
 
     const handleDisconnect = () => {
-      console.log('🔌 Disconnected from server')
+      console.log('❌ Disconnected from server')
       setIsConnected(false)
     }
 
     const handleConnectionError = (error) => {
-      console.error('❌ Connection error:', error)
+      console.error('Connection error:', error)
       if (error.message === 'Authentication error') {
         Cookies.remove('token')
         Cookies.remove('user')
@@ -828,31 +866,31 @@ export default function ChatPage() {
     }
 
     const handleRecentMessages = (data) => {
-      console.log('📩 Received recent messages:', data)
+      console.log('📝 Received recent messages:', data)
       if (data.isPrivate && data.targetUserId) {
-        setMessages(data.messages || [])
+        setMessages(data.messages)
       }
     }
 
     const handleNewMessage = (message) => {
       console.log('📨 New private message received:', message)
-      
-      const senderId = message.senderId || message.sender?.id || message.sender?._id
-      const receiverId = message.receiverId || message.receiver?.id || message.receiver?._id
+
+      const senderId = message.senderId || message.sender?.id || message.sender?.id
+      const receiverId = message.receiverId || message.receiver?.id || message.receiver?.id
       const senderUsername = message.senderUsername || message.sender?.username
-      
+
       console.log('Message details:', { senderId, receiverId, senderUsername, currentUserId: currentUser?.id, activeChatId: activeChat?.id })
-      
+
       const isForCurrentChat = activeChat && (
         (senderId === activeChat.id && receiverId === currentUser?.id) ||
         (senderId === currentUser?.id && receiverId === activeChat.id)
       )
-      
+
       if (isForCurrentChat) {
-        console.log('✅ Message is for current active chat, adding to messages')
+        console.log('Message is for current active chat, adding to messages')
         setMessages(prev => [...prev, message])
       } else if (senderUsername !== currentUser?.username && senderId && senderId !== currentUser?.id) {
-        console.log('📬 Message is for different chat, updating unread count for senderId:', senderId)
+        console.log('Message is for different chat, updating unread count for senderId:', senderId)
         setUnreadCounts(prev => ({
           ...prev,
           [senderId]: (prev[senderId] || 0) + 1
@@ -860,9 +898,10 @@ export default function ChatPage() {
       }
     }
 
-    const handleOnlineUsers = (users) => {
-      console.log('👥 Online users updated:', users)
-      setOnlineUsers(users)
+    // Updated to handle all users with online/offline status
+    const handleAllUsers = (users) => {
+      console.log('👥 All users updated:', users)
+      setAllUsers(users) // Now includes both online and offline users with isOnline property
     }
 
     const handleUserTyping = (data) => {
@@ -888,7 +927,7 @@ export default function ChatPage() {
     socket.on('connect_error', handleConnectionError)
     socket.on('recentMessages', handleRecentMessages)
     socket.on('message', handleNewMessage)
-    socket.on('onlineUsers', handleOnlineUsers)
+    socket.on('allUsers', handleAllUsers) // Changed from 'onlineUsers' to 'allUsers'
     socket.on('typing', handleUserTyping)
     socket.on('stopTyping', handleUserStoppedTyping)
 
@@ -898,7 +937,7 @@ export default function ChatPage() {
       socket.off('connect_error', handleConnectionError)
       socket.off('recentMessages', handleRecentMessages)
       socket.off('message', handleNewMessage)
-      socket.off('onlineUsers', handleOnlineUsers)
+      socket.off('allUsers', handleAllUsers) // Changed from 'onlineUsers' to 'allUsers'
       socket.off('typing', handleUserTyping)
       socket.off('stopTyping', handleUserStoppedTyping)
     }
@@ -917,17 +956,18 @@ export default function ChatPage() {
   // Handle user selection and chat switching
   const handleUserSelect = useCallback((user) => {
     console.log('👤 User selected:', user)
-    
+
+    // Clear unread count for this user
     setUnreadCounts(prev => {
       const newCounts = { ...prev }
       delete newCounts[user.id]
       return newCounts
     })
-    
+
     if (socket) {
       socket.emit('joinPrivateChat', { targetUserId: user.id })
     }
-    
+
     setActiveChat(user)
     setMessages([])
     setTypingUsers([])
@@ -950,7 +990,7 @@ export default function ChatPage() {
         isPrivate: true,
         targetUserId: activeChat.id
       }
-      
+
       if (isTyping) {
         socket.emit('typing', typingData)
       } else {
@@ -1003,22 +1043,21 @@ export default function ChatPage() {
 
   return (
     <div className="h-screen flex bg-gray-100 overflow-hidden">
+      {/* UserList - Updated to use allUsers instead of onlineUsers */}
       <UserList 
-        onlineUsers={onlineUsers} 
-        currentUser={currentUser} 
+        allUsers={allUsers}
+        currentUser={currentUser}
         onUserSelect={handleUserSelect}
         activeChat={activeChat}
         unreadCounts={unreadCounts}
         isOpen={sidebarOpen}
         onClose={handleSidebarClose}
       />
-      
+
       <div className="flex-1 flex flex-col bg-white shadow-xl min-w-0">
-        {/* Connection Status Bar */}
+        {/* Connection Status Bar - Updated to show online/offline counts */}
         <div className={`px-3 sm:px-6 py-1 sm:py-2 text-xs sm:text-sm text-center transition-all flex-shrink-0 ${
-          isConnected 
-            ? 'bg-green-100 text-green-800' 
-            : 'bg-red-100 text-red-800'
+          isConnected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
         }`}>
           <div className="flex items-center justify-center space-x-1 sm:space-x-2">
             <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
@@ -1035,42 +1074,44 @@ export default function ChatPage() {
         </div>
 
         <MessageList 
-          messages={messages} 
-          currentUser={currentUser} 
+          messages={messages}
+          currentUser={currentUser}
           typingUsers={typingUsers}
           activeChat={activeChat}
           onMenuOpen={handleSidebarToggle}
         />
-        
+
         <MessageInput 
-          onSendMessage={handleSendMessage} 
+          onSendMessage={handleSendMessage}
           onTyping={handleTyping}
           activeChat={activeChat}
         />
 
-        {/* User Info & Logout Bar - Responsive */}
+        {/* User Info & Logout Bar - Updated to show online/offline counts */}
         <div className="bg-gray-50 border-t border-gray-200 px-3 sm:px-6 py-2 sm:py-3 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
             <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center font-bold text-white text-xs sm:text-sm flex-shrink-0">
               {currentUser?.username?.charAt(0).toUpperCase() || 'U'}
             </div>
+
             <div className="flex-1 min-w-0">
               <p className="text-xs sm:text-sm font-medium text-gray-700 truncate">
                 <span className="hidden sm:inline">Logged in as </span>
                 <span className="text-purple-600">{currentUser?.username}</span>
               </p>
-              <div className="flex items-center space-x-1 sm:space-x-2 text-xs text-gray-500">
-                <span>{onlineUsers.length} online</span>
-                {activeChat && (
-                  <>
-                    <span className="hidden sm:inline">•</span>
-                    <span className="hidden sm:inline truncate">With {activeChat.username}</span>
-                  </>
-                )}
-              </div>
+            </div>
+
+            <div className="flex items-center space-x-1 sm:space-x-2 text-xs text-gray-500">
+              <span>{allUsers.filter(user => user.isOnline).length} online</span>
+              {activeChat && (
+                <>
+                  <span className="hidden sm:inline">•</span>
+                  <span className="hidden sm:inline truncate">With {activeChat.username}</span>
+                </>
+              )}
             </div>
           </div>
-          
+
           <button
             onClick={handleLogout}
             className="bg-gradient-to-r from-red-500 to-red-600 text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-200 text-xs sm:text-sm font-medium shadow-lg hover:shadow-xl flex items-center space-x-1 sm:space-x-2 flex-shrink-0"

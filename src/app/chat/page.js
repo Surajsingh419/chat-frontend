@@ -1,4 +1,4 @@
-// src/app/chat/page.js - Responsive Private Chat with Mobile Support
+// src/app/chat/page.js - FIXED Responsive Private Chat
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
@@ -84,30 +84,25 @@ const UserList = ({ onlineUsers, currentUser, onUserSelect, activeChat, unreadCo
       {/* Mobile Overlay */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden" 
           onClick={onClose}
         />
       )}
       
       {/* Sidebar */}
-      <div className={`
-        fixed lg:relative inset-y-0 left-0 z-50 lg:z-0
-        w-80 sm:w-96 lg:w-80 xl:w-96
-        bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white 
-        flex flex-col shadow-2xl h-full
-        transform transition-transform duration-300 ease-in-out lg:transform-none
-        ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `}>
+      <div className={`fixed lg:relative inset-y-0 left-0 z-50 lg:z-0 w-80 sm:w-96 lg:w-80 xl:w-96 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white flex flex-col shadow-2xl h-full transform transition-transform duration-300 ease-in-out lg:transform-none ${
+        isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      }`}>
         {/* Header */}
         <div className="p-4 sm:p-6 border-b border-gray-700/50 bg-gray-800/50 backdrop-blur-sm flex-shrink-0">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
             <h2 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-               Chats
+              Chats
             </h2>
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-lg"></div>
               {/* Close button for mobile */}
-              <button
+              <button 
                 onClick={onClose}
                 className="lg:hidden p-1 hover:bg-gray-700 rounded"
               >
@@ -388,11 +383,15 @@ const MessageList = ({ messages, currentUser, typingUsers, activeChat, onMenuOpe
 
             {/* Messages */}
             {messages.map((message, index) => {
-              const isOwnMessage = (message.senderUsername === currentUser?.username) || 
-                                 (message.sender?.username === currentUser?.username)
+              // **FIXED:** Simplified message ownership checking
+              const isOwnMessage = message.senderId === currentUser?.id || 
+                                 message.senderUsername === currentUser?.username ||
+                                 message.sender?.id === currentUser?.id ||
+                                 message.sender?._id === currentUser?.id
+
               const showAvatar = index === 0 || 
-                               (messages[index - 1]?.senderUsername !== message.senderUsername &&
-                                messages[index - 1]?.sender?.username !== message.sender?.username)
+                               (messages[index - 1]?.senderId !== message.senderId &&
+                                messages[index - 1]?.senderUsername !== message.senderUsername)
               
               return (
                 <div key={message.id || index} className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group`}>
@@ -402,7 +401,7 @@ const MessageList = ({ messages, currentUser, typingUsers, activeChat, onMenuOpe
                       <div className="flex-shrink-0 mb-1">
                         {showAvatar ? (
                           <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg text-sm">
-                            {(message.senderUsername || message.sender?.username)?.charAt(0).toUpperCase() || 'U'}
+                            {(message.senderUsername || message.sender?.username || 'U')?.charAt(0).toUpperCase()}
                           </div>
                         ) : (
                           <div className="w-8 h-8 sm:w-10 sm:h-10"></div>
@@ -698,7 +697,7 @@ const MessageInput = ({ onSendMessage, onTyping, activeChat }) => {
   )
 }
 
-// Main Chat Component - Now fully responsive
+// Main Chat Component - Now fully responsive with FIXED message handling
 export default function ChatPage() {
   const [socket, setSocket] = useState(null)
   const [currentUser, setCurrentUser] = useState(null)
@@ -756,7 +755,7 @@ export default function ChatPage() {
 
   // Socket event listeners
   useEffect(() => {
-    if (!socket) return
+    if (!socket || !currentUser) return
 
     const handleConnect = () => {
       console.log('✅ Connected to server')
@@ -784,21 +783,31 @@ export default function ChatPage() {
       }
     }
 
+    // **FIXED:** Simplified message handling logic
     const handleNewMessage = (message) => {
-      console.log('📨 New private message:', message)
+      console.log('📨 New private message received:', message)
       
-      // Check if message is for current active chat
-      const isForCurrentChat = activeChat && 
-        ((message.sender._id === activeChat.id && message.receiver._id === currentUser?.id) ||
-         (message.sender._id === currentUser?.id && message.receiver._id === activeChat.id))
+      const senderId = message.senderId || message.sender?.id || message.sender?._id
+      const receiverId = message.receiverId || message.receiver?.id || message.receiver?._id
+      const senderUsername = message.senderUsername || message.sender?.username
+      
+      console.log('Message details:', { senderId, receiverId, senderUsername, currentUserId: currentUser?.id, activeChatId: activeChat?.id })
+      
+      // Check if this message belongs to current active chat
+      const isForCurrentChat = activeChat && (
+        (senderId === activeChat.id && receiverId === currentUser?.id) ||
+        (senderId === currentUser?.id && receiverId === activeChat.id)
+      )
       
       if (isForCurrentChat) {
+        console.log('✅ Message is for current active chat, adding to messages')
         setMessages(prev => [...prev, message])
-      } else if (message.sender.username !== currentUser?.username) {
-        // Update unread count for private messages
+      } else if (senderUsername !== currentUser?.username && senderId && senderId !== currentUser?.id) {
+        console.log('📬 Message is for different chat, updating unread count for senderId:', senderId)
+        // Update unread count for messages from other users
         setUnreadCounts(prev => ({
           ...prev,
-          [message.sender._id]: (prev[message.sender._id] || 0) + 1
+          [senderId]: (prev[senderId] || 0) + 1
         }))
       }
     }
@@ -1031,5 +1040,4 @@ export default function ChatPage() {
     </div>
   )
 }
-
 
